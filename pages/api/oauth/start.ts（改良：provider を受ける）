@@ -1,0 +1,18 @@
+// pages/api/oauth/start.ts
+import type { NextApiRequest, NextApiResponse } from "next";
+
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  const provider = String(req.query.provider || "youtube");
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  if (provider === "youtube") {
+    const redirectUri = `${base}/api/oauth/callback?provider=youtube`;
+    const clientId = process.env.GOOGLE_CLIENT_ID!;
+    const scope = encodeURIComponent("https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly");
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&access_type=offline&prompt=consent`;
+    return res.status(200).json({ url });
+  }
+
+  // TODO: X/Instagram/TikTok start flows
+  return res.status(400).json({ error: "Unsupported provider" });
+}
