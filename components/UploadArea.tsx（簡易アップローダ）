@@ -1,0 +1,14 @@
+// components/UploadArea.tsx
+import React from "react";
+
+export const UploadArea: React.FC<{ onFile: (f: File) => void }> = ({ onFile }) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) onFile(e.target.files[0]);
+  };
+  return (
+    <div style={{ border: "2px dashed #ccc", padding: 20 }}>
+      <input type="file" accept="video/*" onChange={handleFile} />
+      <p>Drag or click to select video</p>
+    </div>
+  );
+};
