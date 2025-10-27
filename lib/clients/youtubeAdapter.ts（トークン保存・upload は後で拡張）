@@ -1,0 +1,18 @@
+// lib/clients/youtubeAdapter.ts
+/**
+ * Adapter skeleton for YouTube interactions.
+ * For now: helper to build token storage record shape.
+ * Actual upload may be done client-side (resumable) or server-side.
+ */
+export function buildYouTubeRecord(userId: string, tokenObj: any) {
+  return {
+    user_id: userId,
+    provider: "youtube",
+    provider_user_id: tokenObj?.id || null,
+    access_token: tokenObj.access_token,
+    refresh_token: tokenObj.refresh_token,
+    expires_at: tokenObj.expires_at || null,
+    scopes: tokenObj.scope || null,
+    raw: tokenObj
+  };
+}
