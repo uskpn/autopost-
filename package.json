@@ -13,7 +13,7 @@
     "react-dom": "18.2.0",
     "@supabase/supabase-js": "^2.0.0",
     "@ffmpeg/ffmpeg": "^0.11.7",
-  　"axios": "^1.4.0",
-  　"jose": "^4.16.0"
+    "axios": "^1.4.0",
+    "jose": "^4.16.0"
   }
 }
