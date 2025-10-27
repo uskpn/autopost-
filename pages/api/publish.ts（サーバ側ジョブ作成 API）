@@ -1,0 +1,29 @@
+// pages/api/publish.ts
+import type { NextApiRequest, NextApiResponse } from "next";
+import { supabaseAdmin } from "../../utils/supabaseAdmin";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") return res.status(405).end();
+  const { user_id, title, description, platforms, source } = req.body;
+
+  if (!user_id || !platforms || !source) return res.status(400).json({ error: "Missing fields" });
+
+  try {
+    const job = {
+      user_id,
+      title: title || "",
+      description: description || "",
+      platforms: JSON.stringify(platforms), // e.g. ["youtube","x"]
+      source, // could be base64 blob URL, or cloud link
+      status: "queued",
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabaseAdmin.from("jobs").insert(job).select().single();
+    if (error) throw error;
+    return res.status(200).json({ job: data });
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ error: "failed to create job" });
+  }
+}
