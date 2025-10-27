@@ -1,0 +1,58 @@
+// pages/api/oauth/callback.ts
+import type { NextApiRequest, NextApiResponse } from "next";
+import qs from "qs";
+import fetch from "node-fetch";
+import { supabaseAdmin } from "../../../utils/supabaseAdmin";
+import { buildYouTubeRecord } from "../../../lib/clients/youtubeAdapter";
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { code, provider, state } = req.query;
+  if (!code || !provider) return res.status(400).send("Missing code/provider");
+
+  try {
+    if (provider === "youtube") {
+      // Exchange code for tokens
+      const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: qs.stringify({
+          code: String(code),
+          client_id: process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/oauth/callback?provider=youtube`,
+          grant_type: "authorization_code"
+        })
+      });
+      const tokenJson = await tokenRes.json();
+
+      // tokenJson contains access_token, refresh_token, expires_in, scope, token_type
+      // Optionally fetch user info for provider_user_id (omitted for brevity)
+
+      // Persist tokens with Supabase admin client
+      // user association: in production pass user_id via state or session; here we assume `state` holds user id
+      const userId = String(state || "anonymous");
+      const record = buildYouTubeRecord(userId, {
+        ...tokenJson,
+        expires_at: tokenJson.expires_in ? Math.floor(Date.now()/1000) + Number(tokenJson.expires_in) : null
+      });
+
+      // Upsert into 'accounts' table
+      await supabaseAdmin.from("accounts").upsert({
+        user_id: userId,
+        provider: "youtube",
+        access_token_encrypted: record.access_token,
+        refresh_token_encrypted: record.refresh_token,
+        scopes: record.scopes,
+        expires_at: record.expires_at,
+        raw: record.raw
+      }, { onConflict: ["user_id","provider"] });
+
+      return res.status(200).send("YouTube connected. You can close this window.");
+    }
+
+    return res.status(400).send("Provider not implemented");
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).send("OAuth callback error");
+  }
+}
