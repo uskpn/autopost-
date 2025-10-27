@@ -1,0 +1,27 @@
+// pages/connect.tsx
+import React from "react";
+import { Navbar } from "../components/Navbar";
+
+export default function ConnectPage() {
+  const startOAuth = async (provider: string) => {
+    const res = await fetch(`/api/oauth/start?provider=${provider}`);
+    const { url } = await res.json();
+    // optionally include state (user id) e.g. &state=userId
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div style={{ padding: 20 }}>
+        <h2>Connect SNS</h2>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={() => startOAuth("youtube")}>Connect YouTube</button>
+          <button onClick={() => startOAuth("x")}>Connect X (準備中)</button>
+          <button onClick={() => startOAuth("instagram")}>Connect Instagram (準備中)</button>
+          <button onClick={() => startOAuth("tiktok")}>Connect TikTok (準備中)</button>
+        </div>
+      </div>
+    </>
+  );
+}
