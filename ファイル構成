@@ -1,0 +1,25 @@
+short-poster-web/
+├─ .env.local           # 既存に追記
+├─ package.json         # 依存追記（下で示す）
+├─ /utils
+│   ├─ supabaseClient.ts    (既存)
+│   ├─ supabaseAdmin.ts     (新：Service Role 用)
+│   └─ ffmpegClient.ts      (新：ffmpeg.wasm wrapper)
+├─ /lib
+│   └─ clients
+│       ├─ youtubeAdapter.ts
+│       ├─ xAdapter.ts
+│       ├─ instagramAdapter.ts
+│       └─ tiktokAdapter.ts
+├─ /pages
+│   ├─ api
+│   │   ├─ oauth
+│   │   │   ├─ start.ts
+│   │   │   └─ callback.ts
+│   │   └─ publish.ts
+│   ├─ connect.tsx      (新：接続画面)
+│   └─ publish.tsx      (新：投稿画面)
+├─ /components
+│   ├─ UploadArea.tsx
+│   └─ PlatformTabs.tsx
+└─ README.md            (追記)
