@@ -1,0 +1,33 @@
+// utils/ffmpegClient.ts
+import { createFFmpeg, fetchFile } from "@ffmpeg/ffmpeg";
+
+const ffmpeg = createFFmpeg({ log: false });
+
+export async function ensureFFmpegLoaded() {
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
+  }
+}
+
+export async function transcodeToShort(file: File) {
+  await ensureFFmpegLoaded();
+  const nameIn = "in.mp4";
+  const nameOut = "out.mp4";
+  ffmpeg.FS("writeFile", nameIn, await fetchFile(file));
+  // 9:16 1080x1920、fast preset
+  await ffmpeg.run(
+    "-i",
+    nameIn,
+    "-vf",
+    "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+    "-c:v",
+    "libx264",
+    "-preset",
+    "fast",
+    "-c:a",
+    "aac",
+    nameOut
+  );
+  const data = ffmpeg.FS("readFile", nameOut);
+  return new File([data.buffer], "short.mp4", { type: "video/mp4" });
+}
