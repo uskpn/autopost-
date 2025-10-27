@@ -1,0 +1,92 @@
+// pages/publish.tsx
+import React, { useState } from "react";
+import { Navbar } from "../components/Navbar";
+import { UploadArea } from "../components/UploadArea";
+import { transcodeToShort } from "../utils/ffmpegClient";
+import { supabase } from "../utils/supabaseClient";
+
+export default function PublishPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [transcoded, setTranscoded] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [status, setStatus] = useState("");
+
+  const onFile = (f: File) => {
+    setFile(f);
+    setTranscoded(null);
+  };
+
+  const handleTranscode = async () => {
+    if (!file) return alert("動画を選んでください");
+    setStatus("Transcoding (ffmpeg.wasm) ...");
+    try {
+      const out = await transcodeToShort(file);
+      setTranscoded(out);
+      setStatus("Transcode complete");
+    } catch (e) {
+      console.error(e);
+      setStatus("Transcode failed — fallback to original upload");
+    }
+  };
+
+  const handleCreateJob = async () => {
+    if (!transcoded && !file) return alert("動画を選んでください");
+    setStatus("Uploading file to Supabase Storage (temporary)...");
+
+    // upload to Supabase storage (publicly accessible for the short demo)
+    const uploadFile = transcoded || file!;
+    const fileName = `uploads/${Date.now()}_${uploadFile.name}`;
+    const { data, error } = await supabase.storage.from("public").upload(fileName, uploadFile as File, { cacheControl: "3600" });
+    if (error) {
+      console.error(error);
+      setStatus("Storage upload failed");
+      return;
+    }
+    const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${data?.Key || fileName}`;
+
+    // create job
+    setStatus("Creating publish job...");
+    const session = await supabase.auth.getSession();
+    const userId = session?.data?.session?.user?.id ?? "anonymous";
+    const res = await fetch("/api/publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        title,
+        description: "",
+        platforms: ["youtube"], // initial MVP
+        source: publicUrl
+      })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      setStatus("Job queued: " + json.job.id);
+    } else {
+      setStatus("Job creation failed");
+      console.error(json);
+    }
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div style={{ padding: 20 }}>
+        <h2>New Post</h2>
+        <UploadArea onFile={onFile} />
+        {file && <p>Selected: {file.name} ({Math.round(file.size/1024/1024)} MB)</p>}
+        <div style={{ marginTop: 12 }}>
+          <button onClick={handleTranscode}>Transcode for Shorts (client)</button>
+        </div>
+        {transcoded && <p>Transcoded: {transcoded.name} ({Math.round(transcoded.size/1024/1024)} MB)</p>}
+        <div style={{ marginTop: 12 }}>
+          <input placeholder="Title" value={title} onChange={(e)=>setTitle(e.target.value)} />
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button onClick={handleCreateJob}>Create Publish Job</button>
+        </div>
+        <p>{status}</p>
+      </div>
+    </>
+  );
+}
