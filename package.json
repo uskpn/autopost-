@@ -2,6 +2,9 @@
   "name": "short-poster-web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+  　"node": ">=18.17.0"
+　}
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -15,8 +18,5 @@
     "@ffmpeg/ffmpeg": "^0.11.6",
     "axios": "^1.4.0",
     "jose": "^4.15.0"
-    "engines": {
-  　　"node": ">=18.17.0"
-　　}
   }
 }
